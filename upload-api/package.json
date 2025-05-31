@@ -6,9 +6,13 @@
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
-    "hono": "^4.7.10"
+    "authenticator": "^1.1.5",
+    "base32-encode": "^2.0.0",
+    "hono": "^4.7.10",
+    "totp-generator": "^1.0.0"
   },
   "devDependencies": {
+    "@types/authenticator": "^1.1.4",
     "wrangler": "^4.4.0"
   }
 }
