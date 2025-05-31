@@ -6,6 +6,8 @@
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.821.0",
+    "@aws-sdk/s3-request-presigner": "^3.821.0",
     "authenticator": "^1.1.5",
     "base32-encode": "^2.0.0",
     "hono": "^4.7.10",
@@ -13,6 +15,7 @@
   },
   "devDependencies": {
     "@types/authenticator": "^1.1.4",
+    "@types/bun": "latest",
     "wrangler": "^4.4.0"
   }
 }
