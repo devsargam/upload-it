@@ -8,9 +8,12 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.821.0",
     "@aws-sdk/s3-request-presigner": "^3.821.0",
+    "@react-email/components": "^0.0.41",
+    "@react-email/render": "^1.1.2",
     "authenticator": "^1.1.5",
     "base32-encode": "^2.0.0",
     "hono": "^4.7.10",
+    "resend": "^4.5.1",
     "totp-generator": "^1.0.0"
   },
   "devDependencies": {
