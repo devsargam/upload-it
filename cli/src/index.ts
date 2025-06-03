@@ -5,14 +5,11 @@ import ora from "ora";
 import chalk from "chalk";
 import axios, { AxiosError } from "axios";
 import Conf from "conf";
+import clipboardy from "clipboardy";
 import { config } from "./config.js";
 import { createReadStream } from "fs";
 import { stat } from "fs/promises";
 import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const cli = cac("upload-it");
 const store = new Conf<{ token: string }>({ projectName: "upload-it" });
@@ -90,11 +87,12 @@ async function uploadFile(filePath: string) {
     await axios.put(data.presignedUrl, createReadStream(filePath), {
       headers: {
         "Content-Length": stats.size,
+        "Content-Type": "application/octet-stream",
       },
     });
 
     spinner.succeed("File uploaded successfully!");
-    console.log(chalk.green("\nFile URL:"), data.presignedUrl);
+    console.log(chalk.green("\nFile URL:"), config.BASE_FILE_URL + fileName);
   } catch (error) {
     console.error(chalk.red("Error:"), (error as AxiosError).message);
     process.exit(1);
@@ -112,6 +110,141 @@ cli
   .action(() => {
     store.clear();
     console.log(chalk.green("Successfully logged out!"));
+  });
+
+cli
+  .command("list", "List uploaded files interactively")
+  .action(async () => {
+    let shouldContinue = true;
+    const spinner = ora("Fetching file list...").start();
+    let filesCache: Array<{ key: string; lastModified: string; size: number; url: string }> = [];
+
+    try {
+      const token = await authenticate(); // Authenticate once
+      const { data: initialData } = await axios.get(
+        `${config.API_URL}${config.endpoints.listFiles}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!(initialData.files && initialData.files.length > 0)) {
+        spinner.info("No files found.");
+        return;
+      }
+      spinner.succeed("Fetched file list.");
+
+      filesCache = initialData.files.map((file: any) => ({
+        ...file,
+        url: config.BASE_FILE_URL + file.key,
+      }));
+
+    } catch (error) {
+      spinner.fail("Failed to fetch initial file list");
+      console.error(chalk.red("Error:"), (error as AxiosError).message);
+      process.exit(1);
+    }
+
+    while (shouldContinue) {
+      console.log("\n"); // Add some spacing
+      const { selectedFileKey } = await inquirer.prompt([
+        {
+          type: "list",
+          name: "selectedFileKey",
+          message: "Select a file to view details (or Exit):",
+          choices: [
+            ...filesCache.map(file => ({ name: file.key, value: file.key })),
+            new inquirer.Separator(),
+            { name: "Exit", value: "__exit__" },
+          ],
+          pageSize: 10,
+        },
+      ]);
+
+      if (selectedFileKey === "__exit__") {
+        shouldContinue = false;
+        console.log(chalk.yellow("Exiting file list view."));
+      } else {
+        const selectedFile = filesCache.find(file => file.key === selectedFileKey);
+        if (selectedFile) {
+          console.log("\n--- File Details ---");
+          console.log(`  ${chalk.cyan("Name:")} ${selectedFile.key}`);
+          console.log(`  ${chalk.blueBright("URL:")} ${selectedFile.url}`);
+          console.log(`  ${chalk.yellow("Size:")} ${(selectedFile.size / 1024).toFixed(2)} KB`);
+          console.log(`  ${chalk.magenta("Last Modified:")} ${new Date(selectedFile.lastModified).toLocaleString()}`);
+          console.log("--------------------\n");
+
+          let inDetailView = true;
+          while (inDetailView) {
+            const { action } = await inquirer.prompt([
+              {
+                type: "list",
+                name: "action",
+                message: "What would you like to do?",
+                choices: [
+                  { name: "Copy URL to clipboard", value: "copy" },
+                  { name: "Delete this file", value: "delete" },
+                  new inquirer.Separator(),
+                  { name: "Back to list", value: "back" },
+                ],
+              },
+            ]);
+
+            if (action === "copy") {
+              try {
+                await clipboardy.write(selectedFile.url);
+                console.log(chalk.green("URL copied to clipboard!"));
+              } catch (err) {
+                console.error(chalk.red("Error copying to clipboard:"), (err as Error).message);
+                console.log(chalk.yellow("You can manually copy the URL from above."));
+              }
+            } else if (action === "delete") {
+              const { confirmDelete } = await inquirer.prompt([
+                {
+                  type: "confirm",
+                  name: "confirmDelete",
+                  message: `Are you sure you want to delete '${selectedFile.key}'? This cannot be undone.`,
+                  default: false,
+                },
+              ]);
+
+              if (confirmDelete) {
+                const spinner = ora(`Deleting '${selectedFile.key}'...`).start();
+                try {
+                  const token = store.get("token") as string; // Token should be available from initial auth
+                  const url = `${config.API_URL}${config.endpoints.deleteFile}/${selectedFile.key}`;
+                  const { data: deleteData } = await axios.delete(url, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+
+                  if (deleteData.success) {
+                    spinner.succeed(deleteData.message || `File '${selectedFile.key}' deleted successfully.`);
+                    // Remove from cache and go back to list
+                    filesCache = filesCache.filter(f => f.key !== selectedFile.key);
+                    inDetailView = false; // Exit detail view
+                  } else {
+                    spinner.fail(deleteData.message || `Failed to delete '${selectedFile.key}'.`);
+                  }
+                } catch (err) {
+                  spinner.fail(`Failed to delete '${selectedFile.key}'.`);
+                  if (axios.isAxiosError(err) && err.response) {
+                    console.error(chalk.red("Error details:"), err.response.data?.message || err.message);
+                  } else {
+                    console.error(chalk.red("Error:"), (err as Error).message);
+                  }
+                }
+              } else {
+                console.log(chalk.yellow("Deletion cancelled."));
+              }
+            } else if (action === "back") {
+              inDetailView = false; // Exit detail view, go back to file list
+            }
+          }
+        }
+      }
+    }
   });
 
 cli.help();
