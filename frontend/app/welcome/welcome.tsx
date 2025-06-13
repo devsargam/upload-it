@@ -5,7 +5,8 @@ import {
 } from "components/magicui/terminal";
 import Lottie, { useLottie } from "lottie-react";
 import animationData from "~/welcome/upload.json";
-import { motion } from "motion/react";
+import { useState, useEffect } from "react";
+import { GenieEffect } from "components/genie-effect";
 
 export function Welcome() {
   const options = {
@@ -16,33 +17,23 @@ export function Welcome() {
 
   const home = useLottie(options);
 
+  // Toggle between maximised and minimised states
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  // Automatically play maximise animation on mount
+  useEffect(() => {
+    const timeout = setTimeout(() => setIsMaximized(true), 100);
+    return () => clearTimeout(timeout);
+  }, []);
+
   return (
-    <main className="flex items-center justify-center pt-16 pb-4 flex-col gap-y-5 bg-background">
+    <main className="flex items-center justify-center pt-16 pb-4 flex-col gap-y-5 bg-foreground h-screen">
       {/* Genie animation wrapper */}
-      <motion.div
-        variants={{
-          minimized: {
-            scaleX: 0.4,
-            scaleY: 0.1,
-            y: 300,
-            opacity: 0,
-          },
-          maximized: {
-            scaleX: 1,
-            scaleY: 1,
-            y: 0,
-            opacity: 1,
-          },
-        }}
-        initial="minimized"
-        animate="maximized"
-        transition={{
-          type: "tween",
-          duration: 1,
-          ease: "anticipate",
-        }}
+      <GenieEffect
+        expanded={isMaximized}
+        duration={0.8}
         className="h-96 w-full max-w-4xl"
-        style={{ originX: 0.5, originY: 1 }}
+        onClick={() => setIsMaximized((v) => !v)}
       >
         <Terminal className="h-96 w-full max-w-4xl">
           <TypingAnimation>
@@ -59,7 +50,7 @@ export function Welcome() {
             file.pdf hello there npx upload-it file.pdf hello there
           </TypingAnimation>
         </Terminal>
-      </motion.div>
+      </GenieEffect>
       {/* <div>{home.View}</div> */}
     </main>
   );
