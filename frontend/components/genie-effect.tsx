@@ -62,7 +62,7 @@ export function GenieEffect({
   useEffect(() => {
     const controls = animate(progress, expanded ? 1 : 0, {
       duration,
-      ease: [0.4, 0, 0.2, 1],
+      ease: [0.4, 0.2, 0.2, 0.8],
     });
     return () => {
       controls.stop();
@@ -79,6 +79,10 @@ export function GenieEffect({
   // right below the viewport, creating the illusion that it slides up on click.
   const translateY = useTransform(progress, (v) => `${(1 - v) * 100}vh`);
 
+  // Gradually scale the element from a smaller size (80%) to its full size (100%)
+  // as the animation progresses.
+  const scale = useTransform(progress, (v) => 0.8 + 0.2 * v);
+
   return (
     <motion.div
       {...restProps}
@@ -87,6 +91,7 @@ export function GenieEffect({
         clipPath,
         WebkitClipPath: clipPath,
         y: translateY,
+        scale,
       }}
     >
       {children}

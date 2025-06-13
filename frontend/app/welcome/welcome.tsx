@@ -22,20 +22,20 @@ export function Welcome() {
 
   // Automatically play maximise animation on mount
   useEffect(() => {
-    const timeout = setTimeout(() => setIsMaximized(true), 100);
+    const timeout = setTimeout(() => setIsMaximized(true), 200);
     return () => clearTimeout(timeout);
   }, []);
 
   return (
-    <main className="flex pt-16 pb-4 flex-col gap-y-5 bg-foreground h-screen">
+    <main className="flex pt-16 pb-4 flex-col gap-y-5 items-center justify-center bg-foreground h-screen">
       {/* Genie animation wrapper */}
       <GenieEffect
         expanded={isMaximized}
-        duration={0.8}
-        className="h-96 w-full max-w-4xl"
+        duration={1}
+        className="h-[500px] w-full max-w-4xl"
         onClick={() => setIsMaximized((v) => !v)}
       >
-        <Terminal className="h-96 w-full max-w-4xl">
+        <Terminal className="h-[500px] w-full max-w-4xl">
           <TypingAnimation>
             {/* <AnimatedSpan>Hello, world! </AnimatedSpan>
             <TypingAnimation>MagicUI is awesome!</TypingAnimation> */}
