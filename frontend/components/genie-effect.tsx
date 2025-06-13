@@ -69,9 +69,15 @@ export function GenieEffect({
     };
   }, [expanded, duration, progress]);
 
+  // Build the dynamic clip-path that gives the "genie" reveal effect.
   const clipPath = useTransform(progress, (v) =>
     buildClipPath(v as number, rows)
   );
+
+  // Move the element vertically from the bottom of the viewport when collapsed
+  // to its natural position when expanded. 100 % means the component is located
+  // right below the viewport, creating the illusion that it slides up on click.
+  const translateY = useTransform(progress, (v) => `${(1 - v) * 100}vh`);
 
   return (
     <motion.div
@@ -80,6 +86,7 @@ export function GenieEffect({
         ...((restProps.style as any) ?? {}),
         clipPath,
         WebkitClipPath: clipPath,
+        y: translateY,
       }}
     >
       {children}

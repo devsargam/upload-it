@@ -27,7 +27,7 @@ export function Welcome() {
   }, []);
 
   return (
-    <main className="flex items-center justify-center pt-16 pb-4 flex-col gap-y-5 bg-foreground h-screen">
+    <main className="flex pt-16 pb-4 flex-col gap-y-5 bg-foreground h-screen">
       {/* Genie animation wrapper */}
       <GenieEffect
         expanded={isMaximized}
