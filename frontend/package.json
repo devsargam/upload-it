@@ -9,6 +9,7 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@radix-ui/react-tooltip": "^1.2.7",
     "@react-router/node": "^7.5.3",
     "@react-router/serve": "^7.5.3",
     "class-variance-authority": "^0.7.1",

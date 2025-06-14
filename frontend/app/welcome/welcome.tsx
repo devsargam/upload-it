@@ -8,6 +8,7 @@ import Lottie, { useLottie } from "lottie-react";
 import animationData from "~/welcome/upload.json";
 import { useState, useEffect, useRef } from "react";
 import { GenieEffect } from "components/genie-effect";
+import { Dock } from "components/dock";
 
 // Local rotating spinner for the "Uploading ..." line
 function Spinner({ interval = 120 }: { interval?: number }) {
@@ -122,7 +123,7 @@ export function Welcome() {
           })()}
         </Terminal>
       </GenieEffect>
-      {/* <div>{home.View}</div> */}
+      <Dock />
     </main>
   );
 }
