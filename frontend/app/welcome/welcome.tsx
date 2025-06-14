@@ -44,7 +44,7 @@ export function Welcome() {
   }, []);
 
   return (
-    <main className="flex pt-16 pb-4 flex-col gap-y-5 items-center bg-foreground h-screen">
+    <main className="flex pt-16 pb-4 flex-col gap-y-5 items-center bg-foreground h-screen justify-between">
       {/* Genie animation wrapper */}
       <GenieEffect
         expanded={isMaximized}

@@ -21,11 +21,11 @@ import {
 } from "lucide-react";
 
 // Maximum scale factor applied to the focussed icon
-const SCALE = 2.25;
+const SCALE = 1.5;
 // Distance (px) before the pointer starts affecting the icon
 const DISTANCE = 110;
 // Lateral nudge applied to neighbouring icons (px)
-const NUDGE = 40;
+const NUDGE = 10;
 // Shared spring config for a bit of bounce
 const SPRING = {
   mass: 0.1,
@@ -37,6 +37,7 @@ const APPS = [
   {
     label: "Safari",
     Icon: Globe,
+    image: "ghostty.png",
   },
   {
     label: "Mail",
@@ -102,11 +103,12 @@ export function Dock() {
           style={{ left: leftSpring, right: rightSpring }}
         />
 
-        {APPS.map(({ label, Icon }) => (
+        {APPS.map(({ label, Icon, image }) => (
           <AppIcon
             key={label}
             label={label}
             Icon={Icon}
+            image={image}
             mouseLeft={mouseLeft}
           />
         ))}
@@ -134,11 +136,12 @@ export function Dock() {
 
 interface AppIconProps {
   label: string;
-  Icon: ComponentType<SVGProps<SVGSVGElement>>;
+  Icon?: ComponentType<SVGProps<SVGSVGElement>>;
   mouseLeft: any;
+  image?: string;
 }
 
-function AppIcon({ label, Icon, mouseLeft }: AppIconProps) {
+function AppIcon({ label, Icon, mouseLeft, image }: AppIconProps) {
   const ref = useRef<HTMLButtonElement>(null);
 
   // 1. Measure pointer distance from the icon centre
@@ -179,9 +182,10 @@ function AppIcon({ label, Icon, mouseLeft }: AppIconProps) {
               duration: 0.7,
             });
           }}
-          className="origin-bottom flex aspect-square w-12 items-center justify-center rounded-xl bg-white shadow"
+          className="origin-bottom flex items-center justify-center bg-white shadow"
         >
-          <Icon className="h-7 w-7 text-gray-900" />
+          {/* <Icon className="h-7 w-7 text-gray-900" /> */}
+          <img src={image} alt={label} className="h-12 w-12" />
         </motion.button>
       </TooltipTrigger>
       <TooltipContent sideOffset={10}>{label}</TooltipContent>
