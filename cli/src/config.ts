@@ -1,5 +1,5 @@
 export const config = {
-  API_URL: "http://localhost:8787",
+  API_URL: "https://upload-api.hp424805.workers.dev",
   BASE_FILE_URL: "https://uploadit.theharsh.xyz/",
   endpoints: {  
     confirm: "/auth/confirm-email",

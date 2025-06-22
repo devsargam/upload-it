@@ -7,7 +7,7 @@ export const presignedUrlHandler = factory.createHandlers(async (c: Context) => 
     const { key } = await c.req.json();
     
     try {
-      const presignedUrl = await generatePresignedUrl(client, key);
+      const presignedUrl = await generatePresignedUrl(client, key, c);
       return c.json({ presignedUrl });
     } catch (error) {
       console.error('Error generating presigned URL:', error);
@@ -19,7 +19,7 @@ export const listFilesHandler = factory.createHandlers(async (c: Context) => {
     const client = createR2Client(c);
 
     try {
-      const files = await listFiles(client);
+      const files = await listFiles(client, c);
       return c.json({ files });
     } catch (error) {
       console.error('Error listing files:', error);
@@ -32,7 +32,7 @@ export const deleteFileHandler = factory.createHandlers(async (c: Context) => {
     const key = c.req.param('key');
 
     try {
-      await deleteFile(client, key);
+      await deleteFile(client, key, c);
       return c.json({ success: true, message: `File '${key}' deleted successfully.` });
     } catch (error) {
       console.error(`Error deleting file '${key}':`, error);

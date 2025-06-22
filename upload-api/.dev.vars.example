@@ -1,5 +1,3 @@
-JWT_SECRET=your-super-secure-jwt-secret-key-here
-
 # Resend Email API Configuration
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxx
 RESEND_FROM_EMAIL=noreply@yourdomain.com

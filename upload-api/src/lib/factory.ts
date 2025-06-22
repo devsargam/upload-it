@@ -1,4 +1,4 @@
 import { createFactory } from 'hono/factory';
-import type { AppEnv } from '@/types/app';
+import { AppEnv } from '@/types/app';
 
-export const factory = createFactory<AppEnv>(); 
+export const factory = createFactory<AppEnv>();         

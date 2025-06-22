@@ -1,12 +1,13 @@
 import { Resend } from 'resend';
 import { EmailService } from '@/services/email/email-service';
-import { config } from '@/lib/config';
-
-const resend = new Resend(config.resend.apiKey);
-const fromEmail = config.resend.fromEmail;
+import { Context } from 'hono';
+import { AppEnv } from '@/types/app';
 
 export class ResendEmailService implements EmailService {
-  async sendEmail(email: string, template: string): Promise<void> {
+  async sendEmail(email: string, template: string, c: Context<AppEnv>): Promise<void> {
+    const resend = new Resend(c.env.RESEND_API_KEY!);
+    const fromEmail = c.env.RESEND_FROM_EMAIL!;
+
     await resend.emails.send({
       from: fromEmail,
       to: email,
@@ -15,7 +16,10 @@ export class ResendEmailService implements EmailService {
     });
   }
 
-  async sendBatchEmails(emails: string[], templates: string[]): Promise<void> {
+  async sendBatchEmails(emails: string[], templates: string[], c: Context<AppEnv>): Promise<void> {
+    const resend = new Resend(c.env.RESEND_API_KEY!);
+    const fromEmail = c.env.RESEND_FROM_EMAIL!;
+
     const batchEmails = emails.map((email, index) => ({
       from: fromEmail,
       to: [email],

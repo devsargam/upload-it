@@ -8,13 +8,11 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.821.0",
     "@aws-sdk/s3-request-presigner": "^3.821.0",
-    "@t3-oss/env-core": "^0.13.8",
     "authenticator": "^1.1.5",
     "base32-encode": "^2.0.0",
     "hono": "^4.7.10",
     "resend": "^4.5.1",
-    "totp-generator": "^1.0.0",
-    "zod": "^3.25.67"
+    "totp-generator": "^1.0.0"
   },
   "devDependencies": {
     "@types/authenticator": "^1.1.4",

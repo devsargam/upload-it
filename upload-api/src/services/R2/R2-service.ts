@@ -1,11 +1,11 @@
-import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client as R2Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import type { Context } from "hono";
-import type { AppEnv } from '@/types/app';
-import { config } from '@/lib/config';
+import { CONFIG } from '@/lib/config';
+import { Context } from 'hono';
+import { AppEnv } from '@/types/app';
 
 export function createR2Client(c: Context<AppEnv>) {
-  return new S3Client({
+  return new R2Client({
     region: "auto",
     endpoint: c.env.R2_ENDPOINT,
     credentials: {
@@ -15,17 +15,17 @@ export function createR2Client(c: Context<AppEnv>) {
   });
 }
 
-export async function generatePresignedUrl(client: S3Client, key: string, expiresIn: number = 3600) {
+export async function generatePresignedUrl(client: R2Client, key: string, c: Context<AppEnv>, expiresIn: number = 3600) {
   return await getSignedUrl(
     client,
-    new PutObjectCommand({ Bucket: config.r2.bucketName, Key: key }),
+    new PutObjectCommand({ Bucket: c.env.R2_BUCKET_NAME, Key: key }),
     { expiresIn },
   );
 }
 
-export async function listFiles(client: S3Client) {
+export async function listFiles(client: R2Client, c: Context<AppEnv>) {
   const command = new ListObjectsV2Command({
-    Bucket: config.r2.bucketName,
+    Bucket: c.env.R2_BUCKET_NAME,
   });
   const { Contents } = await client.send(command);
   return Contents ? Contents.map(file => ({ 
@@ -35,9 +35,9 @@ export async function listFiles(client: S3Client) {
   })) : [];
 }
 
-export async function deleteFile(client: S3Client, key: string) {
+export async function deleteFile(client: R2Client, key: string, c: Context<AppEnv>) {
   const command = new DeleteObjectCommand({
-    Bucket: config.r2.bucketName,
+    Bucket: c.env.R2_BUCKET_NAME,
     Key: key,
   });
   await client.send(command);
