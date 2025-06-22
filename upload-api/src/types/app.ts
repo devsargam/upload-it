@@ -5,7 +5,6 @@ export type AppBindings = {
   R2_BUCKET_NAME: string;
   RESEND_API_KEY: string;
   RESEND_FROM_EMAIL: string;
-  JWT_SECRET: string;
 };
 
 export type AppEnv = {
