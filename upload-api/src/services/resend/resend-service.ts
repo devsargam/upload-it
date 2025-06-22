@@ -1,12 +1,9 @@
 import { Resend } from 'resend';
-import { EmailService } from '../email/email-service';
+import { EmailService } from '@/services/email/email-service';
+import { config } from '@/lib/config';
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
-const fromEmail = process.env.RESEND_FROM_EMAIL!;
-
-if (!fromEmail) {
-  throw new Error("RESEND_FROM_EMAIL is not set");
-}
+const resend = new Resend(config.resend.apiKey);
+const fromEmail = config.resend.fromEmail;
 
 export class ResendEmailService implements EmailService {
   async sendEmail(email: string, template: string): Promise<void> {

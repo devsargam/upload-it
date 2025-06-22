@@ -1,13 +1,9 @@
-import { EmailService } from '../email/email-service';
-import { ResendEmailService } from "./resend-service";
-import { generateOTPTemplate } from '../../templates/otp-template';
+import { EmailService } from '@/services/email/email-service';
+import { ResendEmailService } from '@/services/resend/resend-service';
+import { generateOTPTemplate } from '@/services/email/templates/otp-template';
+import { SendConfirmationMailParams } from '@/types/email';
 
 const emailService: EmailService = new ResendEmailService();
-
-interface SendConfirmationMailParams {
-  email: string;
-  otp: string;
-}
 
 export const sendConfirmationMail = async ({ email, otp }: SendConfirmationMailParams): Promise<void> => {
   const template = generateOTPTemplate(otp);
