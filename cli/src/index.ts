@@ -106,6 +106,23 @@ cli
   });
 
 cli
+  .command("login", "Authenticate with your email")
+  .action(async () => {
+    if (store.has("token")) {
+      console.log(chalk.green("You are already logged in!"));
+      return;
+    }
+    
+    try {
+      await authenticate();
+      console.log(chalk.green("Login successful!"));
+    } catch (error) {
+      console.error(chalk.red("Login failed:"), (error as Error).message);
+      process.exit(1);
+    }
+  });
+
+cli
   .command("logout", "Clear stored credentials")
   .action(() => {
     store.clear();
@@ -115,6 +132,12 @@ cli
 cli
   .command("list", "List uploaded files interactively")
   .action(async () => {
+    if (!store.has("token")) {
+      console.log(chalk.yellow("You need to be logged in to list files."));
+      console.log(chalk.cyan("Please authenticate to continue...\n"));
+      return;
+    }
+
     let shouldContinue = true;
     const spinner = ora("Fetching file list...").start();
     let filesCache: Array<{ key: string; lastModified: string; size: number; url: string }> = [];

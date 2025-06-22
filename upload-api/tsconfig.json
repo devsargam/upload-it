@@ -10,6 +10,16 @@
       "DOM"
     ],
     "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx"
+    "jsxImportSource": "hono/jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/services/*": ["./src/services/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/controllers/*": ["./src/controllers/*"],
+      "@/routes/*": ["./src/routes/*"],
+      "@/utils/*": ["./src/utils/*"]
+    }
   },
 }
