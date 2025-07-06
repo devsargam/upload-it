@@ -112,7 +112,7 @@ export const Terminal = ({
 	return (
 		<div
 			className={cn(
-				"z-0 h-full max-h-[500px] w-full max-w-lg rounded-xl border border-border bg-background",
+				"z-0 h-full w-full rounded-xl border border-border bg-background sm:max-h-[500px] sm:max-w-lg",
 				className
 			)}
 			onMouseEnter={() => setIsHovered(true)}
