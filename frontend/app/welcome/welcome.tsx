@@ -9,23 +9,7 @@ import animationData from "~/welcome/upload.json";
 import { useState, useEffect, useRef } from "react";
 import { GenieEffect } from "components/genie-effect";
 import { Dock } from "components/dock";
-
-// Hook to detect if screen is mobile size
-function useIsMobile() {
-	const [isMobile, setIsMobile] = useState(false);
-
-	useEffect(() => {
-		const checkIsMobile = () => {
-			setIsMobile(window.innerWidth < 640); // sm breakpoint
-		};
-
-		checkIsMobile();
-		window.addEventListener("resize", checkIsMobile);
-		return () => window.removeEventListener("resize", checkIsMobile);
-	}, []);
-
-	return isMobile;
-}
+import { useIsMobile } from "~/hooks/use-is-mobile";
 
 // Local rotating spinner for the "Uploading ..." line
 function Spinner({ interval = 120 }: { interval?: number }) {
