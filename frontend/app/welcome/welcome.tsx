@@ -4,9 +4,9 @@ import {
 	Terminal,
 	TypingAnimation,
 } from "components/magicui/terminal";
-import Lottie, { useLottie } from "lottie-react";
+import { useLottie } from "lottie-react";
 import animationData from "~/welcome/upload.json";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { GenieEffect } from "components/genie-effect";
 import { Dock } from "components/dock";
 import { useIsMobile } from "~/hooks/use-is-mobile";
@@ -23,7 +23,7 @@ function Spinner({ interval = 120 }: { interval?: number }) {
 		return () => clearInterval(id);
 	}, [interval, frames.length]);
 
-	return <span className="mr-2">{frames[index]}</span>;
+	return <span className="mr-2 inline-block w-[1ch]">{frames[index]}</span>;
 }
 
 export function Welcome() {
@@ -35,99 +35,116 @@ export function Welcome() {
 
 	const home = useLottie(options);
 	const isMobile = useIsMobile();
+	const dockRef = useRef<HTMLDivElement>(null);
 
 	// Toggle between maximised and minimised states
-	const [isMaximized, setIsMaximized] = useState(true); // Start as true for mobile, will be controlled by useEffect for desktop
+	const [isMaximized, setIsMaximized] = useState(false);
 
-	// Automatically play maximise animation on mount for desktop only
+	// Automatically play maximise animation on mount for desktop
 	useEffect(() => {
-		// Reset to false first, then animate to true for desktop
-		setIsMaximized(false);
-		const timeout = setTimeout(() => setIsMaximized(true), 200);
+		const timeout = setTimeout(() => setIsMaximized(true), 400);
 		return () => clearTimeout(timeout);
 	}, []);
 
+	const terminalScript = useMemo(() => {
+		const script = [
+			{
+				text: "➜ ~ npx @devsargam/upload-it@latest file.pdf",
+				type: "typed" as const,
+				className: "text-white",
+			},
+			{
+				text: "Getting upload URL...",
+				type: "spinner" as const,
+				className: "text-white",
+			},
+			{
+				text: "Uploading file.pdf...",
+				type: "spinner" as const,
+				className: "text-white",
+			},
+			{
+				text: "✓ File uploaded successfully",
+				type: "static" as const,
+				className: "text-white",
+			},
+			{
+				text: "File URL: https://storage.uploadit.app/file.pdf",
+				type: "static" as const,
+				className: "text-white",
+			},
+			{
+				text: "➜ ~",
+				type: "static" as const,
+				className: "text-white",
+			},
+		];
+
+		const CHAR_DURATION = 60;
+		const EXTRA_DELAY = 500;
+		const SPINNER_DELAY = 1400;
+		const STATIC_DELAY = 450;
+
+		let accumulatedDelay = 0;
+
+		return script.map(({ text, type, className }, idx) => {
+			const delay = accumulatedDelay;
+
+			switch (type) {
+				case "typed":
+					accumulatedDelay += text.length * CHAR_DURATION + EXTRA_DELAY;
+					return (
+						<TypingAnimation key={idx} delay={delay} className={className}>
+							{text}
+						</TypingAnimation>
+					);
+				case "spinner":
+					accumulatedDelay += SPINNER_DELAY;
+					return (
+						<AnimatedSpan
+							key={idx}
+							delay={delay}
+							className={`flex items-center ${className ?? ""}`}
+						>
+							<Spinner />
+							{text}
+						</AnimatedSpan>
+					);
+				default:
+					accumulatedDelay += STATIC_DELAY;
+					return (
+						<AnimatedSpan key={idx} delay={delay} className={className}>
+							{text}
+						</AnimatedSpan>
+					);
+			}
+		});
+	}, []);
+
 	return (
-		<main className="flex flex-col items-center bg-foreground h-screen justify-center sm:pt-16 sm:pb-4 sm:gap-y-5 sm:justify-between">
+		<main className="relative flex flex-col items-center h-screen justify-center sm:pt-16 sm:pb-4 sm:gap-y-5 sm:justify-between overflow-hidden">
+			{/* Background image */}
+			<div
+				className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat"
+				style={{ backgroundImage: "url('/background.jpg')" }}
+			/>
+			<div className="absolute inset-0 -z-10 bg-black/30" />
+
 			{/* Genie animation wrapper */}
 			<GenieEffect
 				expanded={isMaximized}
-				duration={1}
+				duration={0.65}
+				dockRef={dockRef}
 				className="h-screen w-screen sm:h-[500px] sm:w-full sm:max-w-2xl lg:max-w-4xl"
 				onClick={isMobile ? undefined : () => setIsMaximized(v => !v)}
 			>
 				<Terminal className="h-screen w-screen text-sm !max-h-none rounded-none sm:h-[500px] sm:w-full sm:max-w-2xl sm:text-base sm:max-h-[500px] sm:rounded-xl lg:max-w-4xl">
-					{(() => {
-						// Script defining how each line should appear in the terminal
-						const script = [
-							{
-								text: "➜ ~ npx upload-it@latest file.pdf",
-								type: "typed" as const,
-							},
-							{
-								text: "Uploading file.pdf to the cloud...",
-								type: "spinner" as const,
-							},
-							{
-								text: "File uploaded successfully to the cloud.",
-								type: "static" as const,
-							},
-							{
-								text: "https://www.google.com/file.pdf",
-								type: "static" as const,
-							},
-							{ text: "➜ ~", type: "static" as const },
-						];
-
-						// Timing constants (all in ms)
-						const CHAR_DURATION = 60; // Matches TypingAnimation default
-						const EXTRA_DELAY = 500; // Pause after the typed line completes
-						const UPLOAD_DELAY = 2000; // Duration to keep spinner visible before success message
-						const STATIC_DELAY = 500; // Pause between static lines
-
-						let accumulatedDelay = 0;
-
-						return script.map(({ text, type }, idx) => {
-							const delay = accumulatedDelay;
-
-							let element: React.ReactNode = null;
-							switch (type) {
-								case "typed":
-									element = (
-										<TypingAnimation key={idx} delay={delay}>
-											{text}
-										</TypingAnimation>
-									);
-									accumulatedDelay += text.length * CHAR_DURATION + EXTRA_DELAY;
-									break;
-								case "spinner":
-									element = (
-										<AnimatedSpan
-											key={idx}
-											delay={delay}
-											className="flex items-center"
-										>
-											<Spinner />
-											{text}
-										</AnimatedSpan>
-									);
-									accumulatedDelay += UPLOAD_DELAY;
-									break;
-								default:
-									element = (
-										<AnimatedSpan key={idx} delay={delay}>
-											{text}
-										</AnimatedSpan>
-									);
-									accumulatedDelay += STATIC_DELAY;
-							}
-
-							return element;
-						});
-					})()}
+					{terminalScript}
 				</Terminal>
 			</GenieEffect>
-			<div className="hidden sm:block">
+
+			{/* Dock — ref passed so GenieEffect knows where to animate to */}
+			<div ref={dockRef} className="hidden pt-14 sm:block lg:pt-16">
 				<Dock />
 			</div>
 		</main>

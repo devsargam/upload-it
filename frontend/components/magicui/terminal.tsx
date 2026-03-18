@@ -18,9 +18,13 @@ export const AnimatedSpan = ({
 	...props
 }: AnimatedSpanProps) => (
 	<motion.div
-		initial={{ opacity: 0, y: -5 }}
-		animate={{ opacity: 1, y: 0 }}
-		transition={{ duration: 0.3, delay: delay / 1000 }}
+		initial={{ opacity: 0, y: 3, filter: "blur(2px)" }}
+		animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+		transition={{
+			duration: 0.4,
+			delay: delay / 1000,
+			ease: [0.25, 0.1, 0.25, 1],
+		}}
 		className={cn("grid text-sm font-normal tracking-tight", className)}
 		{...props}
 	>
@@ -33,7 +37,6 @@ interface TypingAnimationProps extends MotionProps {
 	className?: string;
 	duration?: number;
 	delay?: number;
-	as?: React.ElementType;
 }
 
 export const TypingAnimation = ({
@@ -41,54 +44,50 @@ export const TypingAnimation = ({
 	className,
 	duration = 60,
 	delay = 0,
-	as: Component = "span",
 	...props
 }: TypingAnimationProps) => {
 	if (typeof children !== "string") {
-		throw new Error("TypingAnimation: children must be a string. Received:");
+		throw new Error("TypingAnimation: children must be a string.");
 	}
 
-	const MotionComponent = motion.create(Component, {
-		forwardMotionProps: true,
-	});
-
 	const [displayedText, setDisplayedText] = useState<string>("");
-	const [started, setStarted] = useState(false);
 	const elementRef = useRef<HTMLElement | null>(null);
 
 	useEffect(() => {
-		const startTimeout = setTimeout(() => {
-			setStarted(true);
-		}, delay);
-		return () => clearTimeout(startTimeout);
-	}, [delay]);
-
-	useEffect(() => {
-		if (!started) return;
+		setDisplayedText("");
 
 		let i = 0;
-		const typingEffect = setInterval(() => {
-			if (i < children.length) {
-				setDisplayedText(children.substring(0, i + 1));
-				i++;
-			} else {
-				clearInterval(typingEffect);
-			}
-		}, duration);
+		let typingEffect: ReturnType<typeof setInterval> | null = null;
+		const startTimeout = setTimeout(() => {
+			typingEffect = setInterval(() => {
+				i += 1;
+				setDisplayedText(children.slice(0, i));
+
+				if (i >= children.length && typingEffect) {
+					clearInterval(typingEffect);
+				}
+			}, duration);
+		}, delay);
 
 		return () => {
-			clearInterval(typingEffect);
+			clearTimeout(startTimeout);
+			if (typingEffect) {
+				clearInterval(typingEffect);
+			}
 		};
-	}, [children, duration, started]);
+	}, [children, delay, duration]);
 
 	return (
-		<MotionComponent
+		<motion.span
 			ref={elementRef}
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			transition={{ duration: 0.15, delay: delay / 1000 }}
 			className={cn("text-sm font-normal tracking-tight", className)}
 			{...props}
 		>
 			{displayedText}
-		</MotionComponent>
+		</motion.span>
 	);
 };
 
@@ -112,22 +111,22 @@ export const Terminal = ({
 	return (
 		<div
 			className={cn(
-				"z-0 h-full w-full rounded-xl border border-border bg-background sm:max-h-[500px] sm:max-w-lg",
+				"z-0 h-full w-full rounded-xl border border-white/10 bg-black text-zinc-100 shadow-2xl shadow-black/30 sm:max-h-[500px] sm:max-w-lg",
 				className
 			)}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
 		>
-			<div className="flex flex-col gap-y-2 border-b border-border p-4">
+			<div className="flex flex-col gap-y-2 border-b border-white/10 bg-white/[0.03] p-4">
 				<div className="flex flex-row gap-x-2">
-					{/* Close Button */}
+					{/* Close */}
 					<div
-						className="group relative h-3 w-3 rounded-full bg-red-500 hover:bg-red-600 transition-colors cursor-pointer"
+						className="group relative h-3 w-3 rounded-full bg-red-500 hover:bg-red-600 transition-colors duration-150 cursor-pointer"
 						onClick={onClose}
 					>
 						<div
 							className={cn(
-								"absolute inset-0 flex items-center justify-center transition-opacity",
+								"absolute inset-0 flex items-center justify-center transition-opacity duration-150",
 								isHovered ? "opacity-100" : "opacity-0"
 							)}
 						>
@@ -135,14 +134,14 @@ export const Terminal = ({
 						</div>
 					</div>
 
-					{/* Minimize Button */}
+					{/* Minimize */}
 					<div
-						className="group relative h-3 w-3 rounded-full bg-yellow-500 hover:bg-yellow-600 transition-colors cursor-pointer"
+						className="group relative h-3 w-3 rounded-full bg-yellow-500 hover:bg-yellow-600 transition-colors duration-150 cursor-pointer"
 						onClick={onMinimize}
 					>
 						<div
 							className={cn(
-								"absolute inset-0 flex items-center justify-center transition-opacity",
+								"absolute inset-0 flex items-center justify-center transition-opacity duration-150",
 								isHovered ? "opacity-100" : "opacity-0"
 							)}
 						>
@@ -150,14 +149,14 @@ export const Terminal = ({
 						</div>
 					</div>
 
-					{/* Maximize Button */}
+					{/* Maximize */}
 					<div
-						className="group relative h-3 w-3 rounded-full bg-green-500 hover:bg-green-600 transition-colors cursor-pointer"
+						className="group relative h-3 w-3 rounded-full bg-green-500 hover:bg-green-600 transition-colors duration-150 cursor-pointer"
 						onClick={onMaximize}
 					>
 						<div
 							className={cn(
-								"absolute inset-0 flex items-center justify-center transition-opacity",
+								"absolute inset-0 flex items-center justify-center transition-opacity duration-150",
 								isHovered ? "opacity-100" : "opacity-0"
 							)}
 						>
@@ -167,7 +166,7 @@ export const Terminal = ({
 				</div>
 			</div>
 			<pre className="p-4">
-				<code className="grid gap-y-1 overflow-auto">{children}</code>
+				<code className="grid gap-y-1 overflow-auto text-zinc-100">{children}</code>
 			</pre>
 		</div>
 	);

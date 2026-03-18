@@ -3,23 +3,11 @@
 import { animate } from "motion";
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import { useRef } from "react";
-import type { ComponentType, SVGProps } from "react";
 import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
 } from "~/components/ui/tooltip";
-import {
-  Globe,
-  Mail,
-  MessageSquare,
-  Image as ImageIcon,
-  StickyNote,
-  Calendar as CalendarIcon,
-  CheckSquare,
-  Music as MusicIcon,
-} from "lucide-react";
-
 // Maximum scale factor applied to the focussed icon
 const SCALE = 1.5;
 // Distance (px) before the pointer starts affecting the icon
@@ -34,80 +22,39 @@ const SPRING = {
 };
 
 const APPS = [
-  {
-    label: "Safari",
-    Icon: Globe,
-    image: "ghostty.png",
-  },
-  {
-    label: "Mail",
-    Icon: Mail,
-  },
-  {
-    label: "Messages",
-    Icon: MessageSquare,
-  },
-  {
-    label: "Photos",
-    Icon: ImageIcon,
-  },
-  {
-    label: "Notes",
-    Icon: StickyNote,
-  },
-  {
-    label: "Calendar",
-    Icon: CalendarIcon,
-  },
-  {
-    label: "Reminders",
-    Icon: CheckSquare,
-  },
-  {
-    label: "Music",
-    Icon: MusicIcon,
-  },
-] as const;
+  { label: "Finder", image: "/finder.png" },
+  { label: "Terminal", image: "/terminal.png" },
+  { label: "VS Code", image: "/vscode.png" },
+  { label: "Ghostty", image: "/ghostty.png" },
+  { label: "Calendar", image: "/calender.png" },
+  { label: "Music", image: "/music.png" },
+];
 
 export function Dock() {
-  // Track pointer distance from **left** edge and **right** edge of the Dock
   const mouseLeft = useMotionValue(-Infinity);
-  const mouseRight = useMotionValue(-Infinity);
-
-  // The glass-morphism background stretches towards the pointer
-  const left = useTransform(mouseLeft, [0, 40], [0, -40]);
-  const right = useTransform(mouseRight, [0, 40], [0, -40]);
-  const leftSpring = useSpring(left, SPRING);
-  const rightSpring = useSpring(right, SPRING);
 
   return (
     <>
       {/* Desktop Dock */}
       <motion.div
         onMouseMove={(e) => {
-          const { left, right } = e.currentTarget.getBoundingClientRect();
-          const offsetLeft = e.clientX - left;
-          const offsetRight = right - e.clientX;
-          mouseLeft.set(offsetLeft);
-          mouseRight.set(offsetRight);
+          const { left } = e.currentTarget.getBoundingClientRect();
+          mouseLeft.set(e.clientX - left);
         }}
         onMouseLeave={() => {
           mouseLeft.set(-Infinity);
-          mouseRight.set(-Infinity);
         }}
-        className="relative mx-auto hidden h-20 items-end gap-4 px-4 pb-4 sm:flex"
+        className="relative mx-auto hidden h-14 items-end gap-3 px-3 pb-2 sm:flex"
       >
         {/* Frosted glass background */}
-        <motion.div
-          className="absolute inset-y-0 -z-10 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md"
-          style={{ left: leftSpring, right: rightSpring }}
+        <div
+          className="absolute inset-0 -z-10 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl"
         />
 
-        {APPS.map(({ label, Icon, image }) => (
+        {APPS.map(({ label, image }) => (
           <AppIcon
             key={label}
             label={label}
-            Icon={Icon}
             image={image}
             mouseLeft={mouseLeft}
           />
@@ -116,19 +63,16 @@ export function Dock() {
 
       {/* Mobile: simple horizontal list */}
       <div className="sm:hidden">
-        <div className="mx-auto flex h-16 max-w-full items-end gap-4 overflow-x-auto rounded-2xl border border-white/20 bg-white/10 px-4 pb-3 backdrop-blur-md">
-          {APPS.map(({ label, Icon }) => (
+        <div className="mx-auto flex h-16 max-w-full items-end gap-4 overflow-x-auto rounded-2xl border border-white/10 bg-white/5 px-4 pb-3 backdrop-blur-xl">
+          {APPS.map(({ label, image }) => (
             <button
               key={label}
-              className="flex aspect-square w-12 shrink-0 items-center justify-center rounded-xl bg-white/80 text-gray-900 shadow"
+              className="flex aspect-square w-12 shrink-0 items-center justify-center rounded-xl bg-white/80 shadow"
             >
-              <Icon className="h-6 w-6" />
+              <img src={image} alt={label} className="h-8 w-8 rounded-lg" />
             </button>
           ))}
         </div>
-        <p className="mt-4 text-center text-xs font-medium text-gray-300">
-          Use a desktop viewport (≥640px) to interact with the Dock.
-        </p>
       </div>
     </>
   );
@@ -136,12 +80,11 @@ export function Dock() {
 
 interface AppIconProps {
   label: string;
-  Icon?: ComponentType<SVGProps<SVGSVGElement>>;
   mouseLeft: any;
-  image?: string;
+  image: string;
 }
 
-function AppIcon({ label, Icon, mouseLeft, image }: AppIconProps) {
+function AppIcon({ label, mouseLeft, image }: AppIconProps) {
   const ref = useRef<HTMLButtonElement>(null);
 
   // 1. Measure pointer distance from the icon centre
@@ -175,17 +118,15 @@ function AppIcon({ label, Icon, mouseLeft, image }: AppIconProps) {
           ref={ref}
           style={{ x: xSpring, scale: scaleSpring, y }}
           onClick={() => {
-            // Bounce animation on click
-            animate(y, [0, -40, 0], {
-              repeat: 2,
-              ease: [0.42, 0, 0.58, 1],
-              duration: 0.7,
+            // Bounce animation on click — natural deceleration
+            animate(y, [0, -30, 0, -10, 0], {
+              ease: [0.33, 0, 0.2, 1],
+              duration: 0.8,
             });
           }}
-          className="origin-bottom flex items-center justify-center bg-white shadow"
+          className="origin-bottom flex items-center justify-center rounded-xl"
         >
-          {/* <Icon className="h-7 w-7 text-gray-900" /> */}
-          <img src={image} alt={label} className="h-12 w-12" />
+          <img src={image} alt={label} className="h-12 w-12 rounded-xl" />
         </motion.button>
       </TooltipTrigger>
       <TooltipContent sideOffset={10}>{label}</TooltipContent>
