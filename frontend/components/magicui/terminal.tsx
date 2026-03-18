@@ -32,7 +32,7 @@ export const AnimatedSpan = ({
 	</motion.div>
 );
 
-interface TypingAnimationProps extends MotionProps {
+interface TypingAnimationProps {
 	children: string;
 	className?: string;
 	duration?: number;
@@ -44,25 +44,26 @@ export const TypingAnimation = ({
 	className,
 	duration = 60,
 	delay = 0,
-	...props
 }: TypingAnimationProps) => {
 	if (typeof children !== "string") {
 		throw new Error("TypingAnimation: children must be a string.");
 	}
 
 	const [displayedText, setDisplayedText] = useState<string>("");
-	const elementRef = useRef<HTMLElement | null>(null);
+	const hasStarted = useRef(false);
 
 	useEffect(() => {
-		setDisplayedText("");
+		// Only run once — prevents re-triggers from parent re-renders
+		if (hasStarted.current) return;
+		hasStarted.current = true;
 
 		let i = 0;
 		let typingEffect: ReturnType<typeof setInterval> | null = null;
+
 		const startTimeout = setTimeout(() => {
 			typingEffect = setInterval(() => {
 				i += 1;
 				setDisplayedText(children.slice(0, i));
-
 				if (i >= children.length && typingEffect) {
 					clearInterval(typingEffect);
 				}
@@ -71,23 +72,14 @@ export const TypingAnimation = ({
 
 		return () => {
 			clearTimeout(startTimeout);
-			if (typingEffect) {
-				clearInterval(typingEffect);
-			}
+			if (typingEffect) clearInterval(typingEffect);
 		};
 	}, [children, delay, duration]);
 
 	return (
-		<motion.span
-			ref={elementRef}
-			initial={{ opacity: 0 }}
-			animate={{ opacity: 1 }}
-			transition={{ duration: 0.15, delay: delay / 1000 }}
-			className={cn("text-sm font-normal tracking-tight", className)}
-			{...props}
-		>
+		<span className={cn("text-sm font-normal tracking-tight", className)}>
 			{displayedText}
-		</motion.span>
+		</span>
 	);
 };
 
