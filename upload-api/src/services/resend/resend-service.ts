@@ -12,7 +12,7 @@ export class ResendEmailService implements EmailService {
       from: fromEmail,
       to: email,
       subject: 'Verify your Upload-It account',
-      html: template,
+      text: template,
     });
   }
 

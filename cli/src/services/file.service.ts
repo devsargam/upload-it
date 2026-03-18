@@ -15,14 +15,22 @@ export class FileService {
    */
   async uploadFile(filePath: string): Promise<void> {
     try {
-      const token = await authService.authenticate();
       const { stats, fileName } = await FileUtils.validateAndGetFileStats(filePath);
-      
-      const presignedUrlData = await this.getPresignedUrl(fileName, token);
+      const isLoggedIn = storageService.hasToken();
+
+      let presignedUrlData;
+      if (isLoggedIn) {
+        const token = storageService.getToken() as string;
+        presignedUrlData = await this.getPresignedUrl(fileName, token);
+      } else {
+        presignedUrlData = await this.getAnonPresignedUrl(fileName);
+        MessageUtils.warning("Uploading anonymously — file expires in 24h. Login for 7-day storage.");
+      }
+
       await this.performFileUpload(presignedUrlData.presignedUrl, filePath, stats.size);
-      
+
       MessageUtils.success(messages.files.uploadSuccessful);
-      const fileUrl = FileUtils.generateFileUrl(config.BASE_FILE_URL, fileName);
+      const fileUrl = FileUtils.generateFileUrl(config.BASE_FILE_URL, presignedUrlData.key);
       MessageUtils.info(`File URL: ${fileUrl}`);
     } catch (error) {
       MessageUtils.errorWithLabel("Upload Error", (error as Error).message);
@@ -37,6 +45,18 @@ export class FileService {
     const spinner = createSpinner(messages.files.gettingUploadUrl).start();
     try {
       const data = await ApiService.getPresignedUrl(fileName, token);
+      spinner.succeed();
+      return data;
+    } catch (error) {
+      spinner.fail("Failed to get upload URL");
+      throw error;
+    }
+  }
+
+  private async getAnonPresignedUrl(fileName: string) {
+    const spinner = createSpinner(messages.files.gettingUploadUrl).start();
+    try {
+      const data = await ApiService.getAnonPresignedUrl(fileName);
       spinner.succeed();
       return data;
     } catch (error) {
@@ -60,21 +80,25 @@ export class FileService {
   }
 
   /**
-   * List and manage files interactively
+   * List all files for the authenticated user
    */
   async listFiles(): Promise<void> {
     if (!storageService.hasToken()) {
       MessageUtils.warning(messages.auth.needsLogin);
-      MessageUtils.info(messages.auth.authenticating);
       return;
     }
 
-    const filesCache = await this.fetchFilesList();
-    if (!filesCache.length) {
+    const files = await this.fetchFilesList();
+    if (!files.length) {
       return;
     }
 
-    await this.handleFileListInteraction(filesCache);
+    console.log("\n");
+    for (const file of files) {
+      const size = FileUtils.formatFileSize(file.size);
+      console.log(`  ${file.key}  ${size}  ${file.url}`);
+    }
+    console.log("\n");
   }
 
   /**

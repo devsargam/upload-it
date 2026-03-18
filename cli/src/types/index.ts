@@ -18,6 +18,7 @@ export interface AuthResponse {
 
 export interface PresignedUrlResponse {
   presignedUrl: string;
+  key: string;
 }
 
 export interface ListFilesResponse {

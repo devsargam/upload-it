@@ -43,6 +43,18 @@ export class ApiService {
     }
   }
 
+  static async getAnonPresignedUrl(fileName: string): Promise<PresignedUrlResponse> {
+    try {
+      const { data } = await axios.post<PresignedUrlResponse>(
+        `${this.baseUrl}${config.endpoints.anonPresignedUrl}`,
+        { key: fileName }
+      );
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to get upload URL: ${(error as AxiosError).message}`);
+    }
+  }
+
   static async uploadFile(presignedUrl: string, filePath: string, fileSize: number): Promise<void> {
     try {
       await axios.put(presignedUrl, createReadStream(filePath), {
