@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#050505"/>
+  <rect x="96" y="94" width="1008" height="442" rx="30" fill="#000000" stroke="#1C1C1F" stroke-width="2"/>
+  <rect x="96" y="94" width="1008" height="68" rx="30" fill="#0C0C0E"/>
+  <path d="M96 132C96 110.909 113.909 94 135 94H1065C1086.09 94 1104 110.909 1104 132V162H96V132Z" fill="#0C0C0E"/>
+  <circle cx="150" cy="128" r="11" fill="#FF5F57"/>
+  <circle cx="184" cy="128" r="11" fill="#FEBC2E"/>
+  <circle cx="218" cy="128" r="11" fill="#28C840"/>
+  <text x="156" y="314" fill="#FFFFFF" font-family="Andale Mono, monospace" font-size="34" letter-spacing="-0.01em">&gt; npx @devsargam/upload-it@latest</text>
+  <text x="156" y="364" fill="#FFFFFF" font-family="Andale Mono, monospace" font-size="34" letter-spacing="-0.01em">  file.pdf</text>
+</svg>
