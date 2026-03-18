@@ -1,24 +1,25 @@
 import { Resend } from 'resend';
-import { EmailService } from '../email/email-service';
-
-const resend = new Resend(process.env.RESEND_API_KEY!);
-const fromEmail = process.env.RESEND_FROM_EMAIL!;
-
-if (!fromEmail) {
-  throw new Error("RESEND_FROM_EMAIL is not set");
-}
+import { EmailService } from '@/services/email/email-service';
+import { Context } from 'hono';
+import { AppEnv } from '@/types/app';
 
 export class ResendEmailService implements EmailService {
-  async sendEmail(email: string, template: string): Promise<void> {
+  async sendEmail(email: string, template: string, c: Context<AppEnv>): Promise<void> {
+    const resend = new Resend(c.env.RESEND_API_KEY!);
+    const fromEmail = c.env.RESEND_FROM_EMAIL!;
+
     await resend.emails.send({
       from: fromEmail,
       to: email,
       subject: 'Verify your Upload-It account',
-      html: template,
+      text: template,
     });
   }
 
-  async sendBatchEmails(emails: string[], templates: string[]): Promise<void> {
+  async sendBatchEmails(emails: string[], templates: string[], c: Context<AppEnv>): Promise<void> {
+    const resend = new Resend(c.env.RESEND_API_KEY!);
+    const fromEmail = c.env.RESEND_FROM_EMAIL!;
+
     const batchEmails = emails.map((email, index) => ({
       from: fromEmail,
       to: [email],
