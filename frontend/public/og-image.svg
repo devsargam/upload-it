@@ -8,4 +8,6 @@
   <circle cx="218" cy="128" r="11" fill="#28C840"/>
   <text x="156" y="314" fill="#FFFFFF" font-family="Andale Mono, monospace" font-size="34" letter-spacing="-0.01em">&gt; npx @devsargam/upload-it@latest</text>
   <text x="156" y="364" fill="#FFFFFF" font-family="Andale Mono, monospace" font-size="34" letter-spacing="-0.01em">  file.pdf</text>
+  <rect x="856" y="450" width="170" height="52" rx="26" fill="#111113" stroke="#2A2A2E"/>
+  <text x="894" y="483" fill="#FFFFFF" font-family="Andale Mono, monospace" font-size="22">Run it now</text>
 </svg>

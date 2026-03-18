@@ -2,8 +2,9 @@ import type { Route } from "./+types/home";
 import { Welcome } from "../welcome/welcome";
 
 export function meta({}: Route.MetaArgs) {
-  const title = "Upload It";
-  const description = "Upload files from the terminal with Upload It.";
+  const title = "Upload It | Share files instantly from your terminal";
+  const description =
+    "Upload files in one command, get a shareable link instantly, and keep your workflow inside the terminal with Upload It.";
 
   return [
     { title },
