@@ -21,9 +21,22 @@ export class FileService {
       let presignedUrlData;
       if (isLoggedIn) {
         const token = storageService.getToken() as string;
-        presignedUrlData = await this.getPresignedUrl(fileName, token);
+        try {
+          presignedUrlData = await this.getPresignedUrl(fileName, token);
+        } catch (error) {
+          if (this.isExpiredAuthError(error)) {
+            storageService.clearToken();
+            MessageUtils.warning("Stored login expired. Continuing with anonymous upload.");
+            presignedUrlData = await this.getAnonPresignedUrl(fileName);
+          } else {
+            throw error;
+          }
+        }
       } else {
         presignedUrlData = await this.getAnonPresignedUrl(fileName);
+      }
+
+      if (!isLoggedIn || !storageService.hasToken()) {
         MessageUtils.warning("Uploading anonymously — file expires in 24h. Login for 7-day storage.");
       }
 
@@ -124,6 +137,11 @@ export class FileService {
       }));
     } catch (error) {
       spinner.fail("Failed to fetch file list");
+      if (this.isExpiredAuthError(error)) {
+        storageService.clearToken();
+        MessageUtils.warning("Stored login expired. Please run `upload-it login` and try again.");
+        process.exit(1);
+      }
       MessageUtils.errorWithLabel("Error", (error as Error).message);
       process.exit(1);
     }
@@ -209,9 +227,18 @@ export class FileService {
       }
     } catch (error) {
       spinner.fail(`Failed to delete '${fileName}'.`);
+      if (this.isExpiredAuthError(error)) {
+        storageService.clearToken();
+        MessageUtils.warning("Stored login expired. Please run `upload-it login` and try again.");
+        return false;
+      }
       MessageUtils.errorWithLabel("Delete Error", (error as Error).message);
       return false;
     }
+  }
+
+  private isExpiredAuthError(error: unknown): boolean {
+    return error instanceof Error && error.message === "Stored authentication expired";
   }
 }
 

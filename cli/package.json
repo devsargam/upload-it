@@ -1,12 +1,13 @@
 {
   "name": "@devsargam/upload-it",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "CLI tool for uploading files",
   "type": "module",
-  "bin": {
-    "upload-it": "./dist/index.js"
-  },
+  "bin": "./dist/index.js",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build"

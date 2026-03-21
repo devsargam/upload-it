@@ -28,7 +28,11 @@ const APPS = [
   { label: "Music", image: "/music.png" },
 ];
 
-export function Dock() {
+interface DockProps {
+  onAppClick?: (label: string) => void;
+}
+
+export function Dock({ onAppClick }: DockProps) {
   const mouseLeft = useMotionValue(-Infinity);
 
   return (
@@ -55,6 +59,7 @@ export function Dock() {
             label={label}
             image={image}
             mouseLeft={mouseLeft}
+            onAppClick={onAppClick}
           />
         ))}
       </motion.div>
@@ -65,6 +70,7 @@ export function Dock() {
           {APPS.map(({ label, image }) => (
             <button
               key={label}
+              onClick={() => onAppClick?.(label)}
               className="flex aspect-square w-12 shrink-0 items-center justify-center rounded-xl bg-white/80 shadow"
             >
               <img src={image} alt={label} className="h-8 w-8 rounded-lg" />
@@ -80,9 +86,10 @@ interface AppIconProps {
   label: string;
   mouseLeft: any;
   image: string;
+  onAppClick?: (label: string) => void;
 }
 
-function AppIcon({ label, mouseLeft, image }: AppIconProps) {
+function AppIcon({ label, mouseLeft, image, onAppClick }: AppIconProps) {
   const ref = useRef<HTMLButtonElement>(null);
 
   // 1. Measure pointer distance from the icon centre
@@ -121,6 +128,7 @@ function AppIcon({ label, mouseLeft, image }: AppIconProps) {
               ease: [0.33, 0, 0.2, 1],
               duration: 0.8,
             });
+            onAppClick?.(label);
           }}
           className="origin-bottom flex items-center justify-center rounded-xl"
         >

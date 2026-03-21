@@ -3,6 +3,10 @@ import { createReadStream } from "fs";
 import { config } from "../config.js";
 import { AuthResponse, PresignedUrlResponse, ListFilesResponse, ApiResponse } from "../types/index.js";
 
+function isUnauthorizedError(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 401;
+}
+
 export class ApiService {
   private static baseUrl = config.API_URL;
 
@@ -39,6 +43,9 @@ export class ApiService {
       );
       return data;
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        throw new Error("Stored authentication expired");
+      }
       throw new Error(`Failed to get upload URL: ${(error as AxiosError).message}`);
     }
   }
@@ -78,6 +85,9 @@ export class ApiService {
       );
       return data;
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        throw new Error("Stored authentication expired");
+      }
       throw new Error(`Failed to fetch file list: ${(error as AxiosError).message}`);
     }
   }
@@ -92,7 +102,10 @@ export class ApiService {
       );
       return data;
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        throw new Error("Stored authentication expired");
+      }
       throw new Error(`Failed to delete file: ${(error as AxiosError).message}`);
     }
   }
-} 
+}
