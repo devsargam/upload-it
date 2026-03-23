@@ -33,10 +33,15 @@ function getExpiresAt(hours: number): string {
   return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
 }
 
+function normalizeKey(key: string): string {
+  return key.replace(/\s+/g, '-');
+}
+
 // Anonymous upload — no auth required
 export const anonPresignedUrlHandler = factory.createHandlers(async (c: Context) => {
   const client = createR2Client(c);
-  const { key } = await c.req.json();
+  const { key: rawKey } = await c.req.json();
+  const key = normalizeKey(rawKey);
   const id = generateId();
   const r2Key = `anon/${id}/${key}`;
 
@@ -55,7 +60,8 @@ export const anonPresignedUrlHandler = factory.createHandlers(async (c: Context)
 // Authenticated upload
 export const presignedUrlHandler = factory.createHandlers(async (c: Context) => {
   const client = createR2Client(c);
-  const { key } = await c.req.json();
+  const { key: rawKey } = await c.req.json();
+  const key = normalizeKey(rawKey);
   const email = getUserEmail(c);
   const userId = await hashEmail(email);
   const r2Key = `${userId}/${key}`;
