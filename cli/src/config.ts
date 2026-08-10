@@ -6,6 +6,10 @@ export const config = {
     verifyEmail: "/auth/verify-email",
     presignedUrl: "/files/presigned-url",
     anonPresignedUrl: "/files/anon/presigned-url",
+    multipartCreate: "/files/multipart/create",
+    anonMultipartCreate: "/files/anon/multipart/create",
+    multipartComplete: "/files/multipart/complete",
+    anonMultipartComplete: "/files/anon/multipart/complete",
     listFiles: "/files/list-files",
     deleteFile: "/files/delete-file"
   }

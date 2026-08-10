@@ -21,6 +21,17 @@ export interface PresignedUrlResponse {
   key: string;
 }
 
+export interface MultipartCreateResponse {
+  uploadId: string;
+  key: string;
+  partUrls: string[];
+}
+
+export interface MultipartPart {
+  partNumber: number;
+  etag: string;
+}
+
 export interface ListFilesResponse {
   files: Array<{
     key: string;

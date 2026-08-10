@@ -1,4 +1,4 @@
-import { S3Client as R2Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client as R2Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand, HeadObjectCommand, CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Context } from 'hono';
 import { AppEnv } from '@/types/app';
@@ -40,6 +40,66 @@ export async function generatePresignedUrl(
       Metadata: metadata,
     }),
     { expiresIn },
+  );
+}
+
+export async function createMultipartUpload(
+  client: R2Client,
+  key: string,
+  c: Context<AppEnv>,
+  metadata?: Record<string, string>,
+) {
+  const { UploadId } = await client.send(
+    new CreateMultipartUploadCommand({
+      Bucket: c.env.R2_BUCKET_NAME,
+      Key: key,
+      Metadata: metadata,
+    }),
+  );
+  return UploadId!;
+}
+
+export async function generatePartUrls(
+  client: R2Client,
+  key: string,
+  uploadId: string,
+  partCount: number,
+  c: Context<AppEnv>,
+  expiresIn: number = 21600,
+) {
+  const urls: string[] = [];
+  for (let partNumber = 1; partNumber <= partCount; partNumber++) {
+    const url = await getSignedUrl(
+      client,
+      new UploadPartCommand({
+        Bucket: c.env.R2_BUCKET_NAME,
+        Key: key,
+        UploadId: uploadId,
+        PartNumber: partNumber,
+      }),
+      { expiresIn },
+    );
+    urls.push(url);
+  }
+  return urls;
+}
+
+export async function completeMultipartUpload(
+  client: R2Client,
+  key: string,
+  uploadId: string,
+  parts: { partNumber: number; etag: string }[],
+  c: Context<AppEnv>,
+) {
+  await client.send(
+    new CompleteMultipartUploadCommand({
+      Bucket: c.env.R2_BUCKET_NAME,
+      Key: key,
+      UploadId: uploadId,
+      MultipartUpload: {
+        Parts: parts.map(part => ({ PartNumber: part.partNumber, ETag: part.etag })),
+      },
+    }),
   );
 }
 

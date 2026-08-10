@@ -1,9 +1,10 @@
 import { factory } from '@/lib/factory';
-import { createR2Client, generatePresignedUrl, listFiles, deleteFile } from '@/services/R2/R2-service';
+import { createR2Client, generatePresignedUrl, listFiles, deleteFile, createMultipartUpload, generatePartUrls, completeMultipartUpload } from '@/services/R2/R2-service';
 import { Context } from 'hono';
 
 const ANON_EXPIRY_HOURS = 24;
 const AUTH_EXPIRY_DAYS = 7;
+const MAX_PARTS = 1000;
 
 function generateId(): string {
   const chars = '0123456789abcdefghijklmnopqrstuvwxyz';
@@ -75,6 +76,101 @@ export const presignedUrlHandler = factory.createHandlers(async (c: Context) => 
   } catch (error) {
     console.error('Error generating presigned URL:', error);
     return c.json({ success: false, message: "Failed to generate presigned URL" }, 500);
+  }
+})
+
+function isValidPartCount(partCount: unknown): partCount is number {
+  return Number.isInteger(partCount) && (partCount as number) >= 1 && (partCount as number) <= MAX_PARTS;
+}
+
+function isValidPartsList(parts: unknown): parts is { partNumber: number; etag: string }[] {
+  return Array.isArray(parts)
+    && parts.length > 0
+    && parts.every(part => Number.isInteger(part?.partNumber) && typeof part?.etag === 'string');
+}
+
+// Anonymous multipart upload — no auth required
+export const anonMultipartCreateHandler = factory.createHandlers(async (c: Context) => {
+  const client = createR2Client(c);
+  const { key: rawKey, partCount } = await c.req.json();
+  if (!isValidPartCount(partCount)) {
+    return c.json({ success: false, message: `partCount must be an integer between 1 and ${MAX_PARTS}` }, 400);
+  }
+  const key = normalizeKey(rawKey);
+  const id = generateId();
+  const r2Key = `anon/${id}/${key}`;
+
+  try {
+    const uploadId = await createMultipartUpload(client, r2Key, c, {
+      type: 'anon',
+      expires_at: getExpiresAt(ANON_EXPIRY_HOURS),
+    });
+    const partUrls = await generatePartUrls(client, r2Key, uploadId, partCount, c);
+    return c.json({ uploadId, key: r2Key, partUrls });
+  } catch (error) {
+    console.error('Error creating multipart upload:', error);
+    return c.json({ success: false, message: "Failed to create multipart upload" }, 500);
+  }
+})
+
+// Authenticated multipart upload
+export const multipartCreateHandler = factory.createHandlers(async (c: Context) => {
+  const client = createR2Client(c);
+  const { key: rawKey, partCount } = await c.req.json();
+  if (!isValidPartCount(partCount)) {
+    return c.json({ success: false, message: `partCount must be an integer between 1 and ${MAX_PARTS}` }, 400);
+  }
+  const key = normalizeKey(rawKey);
+  const email = getUserEmail(c);
+  const userId = await hashEmail(email);
+  const r2Key = `${userId}/${key}`;
+
+  try {
+    const uploadId = await createMultipartUpload(client, r2Key, c, {
+      type: 'auth',
+      expires_at: getExpiresAt(AUTH_EXPIRY_DAYS * 24),
+    });
+    const partUrls = await generatePartUrls(client, r2Key, uploadId, partCount, c);
+    return c.json({ uploadId, key: r2Key, partUrls });
+  } catch (error) {
+    console.error('Error creating multipart upload:', error);
+    return c.json({ success: false, message: "Failed to create multipart upload" }, 500);
+  }
+})
+
+// Anonymous multipart complete — no auth required
+export const anonMultipartCompleteHandler = factory.createHandlers(async (c: Context) => {
+  const client = createR2Client(c);
+  const { key, uploadId, parts } = await c.req.json();
+  if (typeof key !== 'string' || !key.startsWith('anon/') || typeof uploadId !== 'string' || !isValidPartsList(parts)) {
+    return c.json({ success: false, message: "Invalid multipart complete request" }, 400);
+  }
+
+  try {
+    await completeMultipartUpload(client, key, uploadId, parts, c);
+    return c.json({ success: true, key });
+  } catch (error) {
+    console.error('Error completing multipart upload:', error);
+    return c.json({ success: false, message: "Failed to complete multipart upload" }, 500);
+  }
+})
+
+// Authenticated multipart complete
+export const multipartCompleteHandler = factory.createHandlers(async (c: Context) => {
+  const client = createR2Client(c);
+  const { key, uploadId, parts } = await c.req.json();
+  const email = getUserEmail(c);
+  const userId = await hashEmail(email);
+  if (typeof key !== 'string' || !key.startsWith(`${userId}/`) || typeof uploadId !== 'string' || !isValidPartsList(parts)) {
+    return c.json({ success: false, message: "Invalid multipart complete request" }, 400);
+  }
+
+  try {
+    await completeMultipartUpload(client, key, uploadId, parts, c);
+    return c.json({ success: true, key });
+  } catch (error) {
+    console.error('Error completing multipart upload:', error);
+    return c.json({ success: false, message: "Failed to complete multipart upload" }, 500);
   }
 })
 
