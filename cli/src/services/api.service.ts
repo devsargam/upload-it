@@ -62,9 +62,22 @@ export class ApiService {
     }
   }
 
-  static async uploadFile(presignedUrl: string, filePath: string, fileSize: number): Promise<void> {
+  static async uploadFile(
+    presignedUrl: string,
+    filePath: string,
+    fileSize: number,
+    onProgress?: (bytesUploaded: number) => void
+  ): Promise<void> {
     try {
-      await axios.put(presignedUrl, createReadStream(filePath), {
+      const fileStream = createReadStream(filePath);
+      if (onProgress) {
+        let bytesUploaded = 0;
+        fileStream.on("data", (chunk) => {
+          bytesUploaded += chunk.length;
+          onProgress(bytesUploaded);
+        });
+      }
+      await axios.put(presignedUrl, fileStream, {
         headers: {
           "Content-Length": fileSize,
           "Content-Type": "application/octet-stream",

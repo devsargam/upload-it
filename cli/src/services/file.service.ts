@@ -83,9 +83,13 @@ export class FileService {
    */
   private async performFileUpload(presignedUrl: string, filePath: string, fileSize: number) {
     const spinner = createSpinner(messages.files.uploading).start();
+    const totalSize = FileUtils.formatFileSize(fileSize);
     try {
-      await ApiService.uploadFile(presignedUrl, filePath, fileSize);
-      spinner.succeed();
+      await ApiService.uploadFile(presignedUrl, filePath, fileSize, (bytesUploaded) => {
+        const percent = fileSize > 0 ? Math.min(100, Math.floor((bytesUploaded / fileSize) * 100)) : 100;
+        spinner.text = `${messages.files.uploading} ${percent}% (${FileUtils.formatFileSize(bytesUploaded)} / ${totalSize})`;
+      });
+      spinner.succeed(`${messages.files.uploading} 100% (${totalSize} / ${totalSize})`);
     } catch (error) {
       spinner.fail("File upload failed");
       throw error;
