@@ -1,6 +1,6 @@
 {
   "name": "@devsargam/upload-it",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "CLI tool for uploading files",
   "type": "module",
   "bin": {
