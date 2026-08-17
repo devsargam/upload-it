@@ -1,6 +1,7 @@
 export const config = {
   API_URL: "https://upload-api.sargam.workers.dev",
   BASE_FILE_URL: "https://storage.uploadit.app/",
+  RECEIVE_URL: "https://uploadit.app/r/",
   endpoints: {  
     confirm: "/auth/confirm-email",
     verifyEmail: "/auth/verify-email",

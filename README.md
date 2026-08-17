@@ -30,13 +30,20 @@ Send a file straight to another machine. The file never touches storage — the
 server only helps the two sides find each other.
 
 ```bash
-# On the sending machine — prints a code, then waits
+# On the sending machine — prints a link and a code, then waits
 upload-it send photo.png
+```
 
-# On the receiving machine
+The receiver has two options. A browser link, so they need nothing installed:
+
+```
+https://uploadit.app/r/<code>
+```
+
+Or the CLI, if they have it:
+
+```bash
 upload-it receive <code>
-
-# Save somewhere other than the current directory
 upload-it receive <code> --out ~/Downloads
 ```
 

@@ -1,9 +1,18 @@
+import { config } from "../config.js";
 import { SignalChannel } from "./signal.service.js";
 import { openSenderChannel, openReceiverChannel } from "./p2p.service.js";
 import { sendFile, receiveFile } from "./transfer.service.js";
 import { createSpinner } from "../utils/spinner.js";
 import { MessageUtils } from "../utils/messages.js";
 import { FileUtils } from "../utils/file.utils.js";
+
+/**
+ * Native WebRTC handles can outlive the transfer and hold the terminal open,
+ * so hand the tty back once the work is done and the output is flushed.
+ */
+function exitCleanly(): void {
+  process.stdout.write("", () => process.exit(0));
+}
 
 function progressText(label: string, bytes: number, total: number): string {
   const percent = total > 0 ? Math.min(100, Math.floor((bytes / total) * 100)) : 100;
@@ -19,7 +28,9 @@ export class ShareService {
       const { stats, fileName } = await FileUtils.validateAndGetFileStats(filePath);
       const roomId = await SignalChannel.createRoom();
 
-      MessageUtils.info(`\n  Run this on the other machine:\n`);
+      MessageUtils.info(`\n  Open in a browser:\n`);
+      MessageUtils.success(`    ${config.RECEIVE_URL}${roomId}\n`);
+      MessageUtils.info(`  Or, with the CLI:\n`);
       MessageUtils.success(`    upload-it receive ${roomId}\n`);
 
       const channel = await SignalChannel.join(roomId);
@@ -41,6 +52,8 @@ export class ShareService {
       } finally {
         channel.close();
       }
+
+      exitCleanly();
     } catch (error) {
       MessageUtils.errorWithLabel("Send Error", (error as Error).message);
       process.exit(1);
@@ -76,6 +89,8 @@ export class ShareService {
     } finally {
       channel.close();
     }
+
+    exitCleanly();
   }
 }
 
