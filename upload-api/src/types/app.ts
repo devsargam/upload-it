@@ -6,6 +6,7 @@ export type AppBindings = {
   RESEND_API_KEY: string;
   RESEND_FROM_EMAIL: string;
   JWT_SECRET: string;
+  SIGNALING_ROOM: DurableObjectNamespace;
 };
 
 export type AppEnv = {
