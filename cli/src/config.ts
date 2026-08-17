@@ -11,6 +11,11 @@ export const config = {
     multipartComplete: "/files/multipart/complete",
     anonMultipartComplete: "/files/anon/multipart/complete",
     listFiles: "/files/list-files",
-    deleteFile: "/files/delete-file"
-  }
+    deleteFile: "/files/delete-file",
+    signalRoom: "/signal/room"
+  },
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" }
+  ]
 }; 
