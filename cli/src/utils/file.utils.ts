@@ -1,4 +1,5 @@
 import { stat } from "fs/promises";
+import { existsSync } from "fs";
 import path from "path";
 import { MessageUtils } from "./messages.js";
 
@@ -55,5 +56,21 @@ export class FileUtils {
    */
   static generateFileUrl(baseUrl: string, key: string): string {
     return baseUrl + key;
+  }
+
+  /**
+   * Find an unused path by adding " (1)", " (2)", ... before the extension
+   */
+  static findFreePath(filePath: string): string {
+    const { dir, name, ext } = path.parse(filePath);
+    let count = 1;
+    let candidate = filePath;
+
+    while (existsSync(candidate)) {
+      candidate = path.join(dir, `${name} (${count})${ext}`);
+      count++;
+    }
+
+    return candidate;
   }
 } 

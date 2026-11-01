@@ -1,5 +1,4 @@
 import { createReadStream, createWriteStream } from "node:fs";
-import { basename, resolve } from "node:path";
 import type { RTCDataChannel } from "node-datachannel/polyfill";
 
 const CHUNK_SIZE = 16 * 1024;
@@ -22,7 +21,7 @@ function drain(channel: RTCDataChannel): Promise<void> {
 
 /**
  * Streams a file over the data channel: metadata first, then raw chunks,
- * and resolves once the receiver acknowledges the whole thing.
+ * and resolves once the receiver acknowledges the whole thing (or throws if it cancels).
  */
 export async function sendFile(
   channel: RTCDataChannel,
@@ -30,9 +29,11 @@ export async function sendFile(
   meta: FileMeta,
   onProgress: ProgressHandler
 ): Promise<void> {
-  const acknowledged = new Promise<void>((res) => {
+  let cancelled = false;
+  const finished = new Promise<void>((res) => {
     channel.onmessage = ({ data }) => {
-      if (String(data) === "done") {
+      cancelled = String(data) === "cancel";
+      if (cancelled || String(data) === "done") {
         res();
       }
     };
@@ -42,50 +43,81 @@ export async function sendFile(
 
   let sent = 0;
   for await (const chunk of createReadStream(filePath, { highWaterMark: CHUNK_SIZE })) {
+    if (cancelled) {
+      break;
+    }
     await drain(channel);
     channel.send(chunk as Buffer);
     sent += (chunk as Buffer).length;
     onProgress(sent, meta.size);
   }
 
-  await acknowledged;
+  await finished;
+  if (cancelled) {
+    throw new Error("The receiver cancelled the transfer.");
+  }
 }
+
+/** Decides where an incoming file is written, or rejects to cancel. */
+export type TargetChooser = (meta: FileMeta) => Promise<string>;
 
 /**
  * Mirrors sendFile: reads metadata, writes chunks to disk, then acknowledges.
+ * Chunks that arrive while chooseTarget is still deciding are held in memory.
  */
 export function receiveFile(
   channel: RTCDataChannel,
-  targetDir: string,
+  chooseTarget: TargetChooser,
   onProgress: ProgressHandler
 ): Promise<{ path: string; meta: FileMeta }> {
   return new Promise((res, rej) => {
     let meta: FileMeta | undefined;
     let target: string;
-    let stream: ReturnType<typeof createWriteStream>;
+    let stream: ReturnType<typeof createWriteStream> | undefined;
+    let pending: Buffer[] = [];
     let written = 0;
+
+    const writeChunk = (chunk: Buffer) => {
+      const current = meta as FileMeta;
+      stream!.write(chunk);
+      written += chunk.length;
+      onProgress(written, current.size);
+
+      if (written >= current.size) {
+        stream!.end(() => {
+          channel.send("done");
+          res({ path: target, meta: current });
+        });
+      }
+    };
+
+    const openTarget = async (current: FileMeta) => {
+      try {
+        target = await chooseTarget(current);
+      } catch (error) {
+        channel.send("cancel");
+        rej(error);
+        return;
+      }
+      stream = createWriteStream(target);
+      stream.on("error", rej);
+      pending.forEach(writeChunk);
+      pending = [];
+    };
 
     channel.onmessage = ({ data }) => {
       // The first message is always the metadata header.
       if (!meta) {
         meta = JSON.parse(String(data)) as FileMeta;
-        // basename keeps a hostile sender from writing outside targetDir.
-        target = resolve(targetDir, basename(meta.name));
-        stream = createWriteStream(target);
-        stream.on("error", rej);
+        void openTarget(meta);
         return;
       }
 
       const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data as ArrayBuffer);
-      stream.write(chunk);
-      written += chunk.length;
-      onProgress(written, meta.size);
-
-      if (written >= meta.size) {
-        stream.end(() => {
-          channel.send("done");
-          res({ path: target, meta: meta as FileMeta });
-        });
+      if (stream) {
+        writeChunk(chunk);
+      } else {
+        pending.push(chunk);
       }
     };
 

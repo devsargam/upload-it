@@ -5,6 +5,11 @@ import { sendFile, receiveFile } from "./transfer.service.js";
 import { createSpinner } from "../utils/spinner.js";
 import { MessageUtils } from "../utils/messages.js";
 import { FileUtils } from "../utils/file.utils.js";
+import { PromptUtils } from "../utils/prompts.js";
+import { existsSync } from "node:fs";
+import { basename, resolve } from "node:path";
+import type { Ora } from "ora";
+import type { FileMeta } from "./transfer.service.js";
 
 /**
  * Native WebRTC handles can outlive the transfer and hold the terminal open,
@@ -17,6 +22,27 @@ function exitCleanly(): void {
 function progressText(label: string, bytes: number, total: number): string {
   const percent = total > 0 ? Math.min(100, Math.floor((bytes / total) * 100)) : 100;
   return `${label} ${percent}% (${FileUtils.formatFileSize(bytes)} / ${FileUtils.formatFileSize(total)})`;
+}
+
+/**
+ * Picks where to save an incoming file, asking the user when the name is taken.
+ */
+async function chooseTarget(meta: FileMeta, targetDir: string, spinner: Ora): Promise<string> {
+  // basename keeps a hostile sender from writing outside targetDir.
+  const target = resolve(targetDir, basename(meta.name));
+  if (!existsSync(target)) {
+    return target;
+  }
+
+  const renamed = FileUtils.findFreePath(target);
+  spinner.stop();
+  const choice = await PromptUtils.resolveFileConflict(basename(target), basename(renamed));
+  spinner.start();
+
+  if (choice === "cancel") {
+    throw new Error("Cancelled. The existing file was left untouched.");
+  }
+  return choice === "overwrite" ? target : renamed;
 }
 
 export class ShareService {
@@ -75,7 +101,10 @@ export class ShareService {
       const session = await openReceiverChannel(channel);
       spinner.text = "Connected. Receiving...";
 
-      const { path, meta } = await receiveFile(session.dataChannel, targetDir, (bytes, total) => {
+      const { path, meta } = await receiveFile(
+        session.dataChannel,
+        (meta) => chooseTarget(meta, targetDir, spinner),
+        (bytes, total) => {
         spinner.text = progressText("Receiving", bytes, total);
       });
 
