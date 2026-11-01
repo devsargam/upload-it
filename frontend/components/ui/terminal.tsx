@@ -118,7 +118,9 @@ function useAudio(enabled: boolean) {
     };
   }, [enabled]);
 
-  const playSound = (sound: [number, number] | undefined) => {
+  // Stable callbacks: the typing effect depends on these, and fresh ones each
+  // render (e.g. every cursor blink) would restart the current keystroke.
+  const playSound = useCallback((sound: [number, number] | undefined) => {
     if (!readyRef.current || !ctxRef.current || !bufferRef.current || !sound)
       return;
     if (ctxRef.current.state === "suspended") ctxRef.current.resume();
@@ -126,12 +128,16 @@ function useAudio(enabled: boolean) {
     src.buffer = bufferRef.current;
     src.connect(ctxRef.current.destination);
     src.start(0, sound[0] / 1000, sound[1] / 1000);
-  };
+  }, []);
 
-  const down = (key: string) =>
-    playSound(KEY_SOUNDS_DOWN[key.toUpperCase()] || KEY_SOUNDS_DOWN[key]);
-  const up = (key: string) =>
-    playSound(KEY_SOUNDS_UP[key.toUpperCase()] || KEY_SOUNDS_UP[key]);
+  const down = useCallback(
+    (key: string) => playSound(KEY_SOUNDS_DOWN[key.toUpperCase()] || KEY_SOUNDS_DOWN[key]),
+    [playSound],
+  );
+  const up = useCallback(
+    (key: string) => playSound(KEY_SOUNDS_UP[key.toUpperCase()] || KEY_SOUNDS_UP[key]),
+    [playSound],
+  );
 
   return { down, up };
 }
@@ -284,6 +290,8 @@ export interface TerminalProps {
   delayBetweenCommands?: number;
   initialDelay?: number;
   enableSound?: boolean;
+  /** Typing waits until this is true (e.g. until an intro animation ends) */
+  autoStart?: boolean;
   onMinimize?: () => void;
   onMaximize?: () => void;
 }
@@ -297,6 +305,7 @@ export function Terminal({
   delayBetweenCommands = 800,
   initialDelay = 500,
   enableSound = true,
+  autoStart = true,
   onMinimize,
   onMaximize,
 }: TerminalProps) {
@@ -332,10 +341,10 @@ export function Terminal({
   const isLastCommand = commandIdx === commands.length - 1;
 
   useEffect(() => {
-    if (!inView || phase !== "idle") return;
+    if (!inView || !autoStart || phase !== "idle") return;
     const t = setTimeout(() => setPhase("typing"), initialDelay);
     return () => clearTimeout(t);
-  }, [inView, phase, initialDelay]);
+  }, [inView, autoStart, phase, initialDelay]);
 
   useEffect(() => {
     if (phase !== "typing") return;

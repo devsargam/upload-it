@@ -1,5 +1,5 @@
 import { animate } from "motion";
-import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
+import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "motion/react";
 import { useRef } from "react";
 import {
   Tooltip,
@@ -20,12 +20,12 @@ const SPRING = {
 };
 
 const APPS = [
-  { label: "Finder", image: "/finder.png" },
-  { label: "Terminal", image: "/terminal.png" },
-  { label: "VS Code", image: "/vscode.png" },
-  { label: "Ghostty", image: "/ghostty.png" },
-  { label: "Calendar", image: "/calender.png" },
-  { label: "Music", image: "/music.png" },
+  { label: "Finder", image: "/finder.webp" },
+  { label: "Terminal", image: "/terminal.webp" },
+  { label: "VS Code", image: "/vscode.webp" },
+  { label: "Ghostty", image: "/ghostty.webp" },
+  { label: "Calendar", image: "/calender.webp" },
+  { label: "Music", image: "/music.webp" },
 ];
 
 interface DockProps {
@@ -91,6 +91,7 @@ interface AppIconProps {
 
 function AppIcon({ label, mouseLeft, image, onAppClick }: AppIconProps) {
   const ref = useRef<HTMLButtonElement>(null);
+  const reduceMotion = useReducedMotion();
 
   // 1. Measure pointer distance from the icon centre
   const distance = useTransform(() => {
@@ -121,13 +122,16 @@ function AppIcon({ label, mouseLeft, image, onAppClick }: AppIconProps) {
       <TooltipTrigger asChild>
         <motion.button
           ref={ref}
-          style={{ x: xSpring, scale: scaleSpring, y }}
+          // Reduced motion: no magnification or bounce, the icons stay put
+          style={reduceMotion ? undefined : { x: xSpring, scale: scaleSpring, y }}
           onClick={() => {
-            // Bounce animation on click — natural deceleration
-            animate(y, [0, -30, 0, -10, 0], {
-              ease: [0.33, 0, 0.2, 1],
-              duration: 0.8,
-            });
+            if (!reduceMotion) {
+              // Bounce animation on click — natural deceleration
+              animate(y, [0, -30, 0, -10, 0], {
+                ease: [0.33, 0, 0.2, 1],
+                duration: 0.8,
+              });
+            }
             onAppClick?.(label);
           }}
           className="origin-bottom flex items-center justify-center rounded-xl"

@@ -1,5 +1,9 @@
 import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
+import { Welcome, BACKGROUND_URL } from "../welcome/welcome";
+
+export const links: Route.LinksFunction = () => [
+  { rel: "preload", as: "image", href: BACKGROUND_URL, type: "image/webp" },
+];
 
 export function meta({}: Route.MetaArgs) {
   const title = "Upload It | Share files instantly from your terminal";

@@ -2,6 +2,7 @@ import { animate } from "motion";
 import {
   motion,
   useMotionValue,
+  useReducedMotion,
   useTransform,
   type HTMLMotionProps,
 } from "motion/react";
@@ -13,6 +14,8 @@ interface GenieEffectProps extends HTMLMotionProps<"div"> {
   rows?: number;
   /** Ref to the dock element — the window animates to/from its centre */
   dockRef?: RefObject<HTMLElement | null>;
+  /** Called each time the window finishes opening */
+  onExpandComplete?: () => void;
 }
 
 // Smootherstep — zero velocity & acceleration at both ends
@@ -53,8 +56,10 @@ export function GenieEffect({
   expanded,
   rows = 20,
   dockRef,
+  onExpandComplete,
   ...restProps
 }: GenieEffectProps) {
+  const reduceMotion = useReducedMotion();
   const selfRef = useRef<HTMLDivElement>(null);
   const progress = useMotionValue(expanded ? 1 : 0);
 
@@ -96,23 +101,34 @@ export function GenieEffect({
     [],
   );
 
+  // Keep the latest callback without restarting the animation when it changes
+  const onExpandCompleteRef = useRef(onExpandComplete);
+  onExpandCompleteRef.current = onExpandComplete;
+
   useEffect(() => {
     const controls = animate(progress, expanded ? 1 : 0, {
       duration,
       ease: easing,
     });
+    if (expanded) {
+      controls.then(() => onExpandCompleteRef.current?.());
+    }
     return () => controls.stop();
   }, [expanded, duration, progress, easing]);
 
   // ── Derived motion values ──
+  // Under reduced motion nothing moves or morphs; the window just fades.
+  // The style keys stay the same either way, because hydration won't remove
+  // server-rendered styles that the client stops setting.
 
   // Y translation: collapsed → travel down to dock, expanded → 0
   const y = useTransform(progress, (p) => {
-    return (1 - p) * travelDistance.current;
+    return reduceMotion ? 0 : (1 - p) * travelDistance.current;
   });
 
   // Clip-path morph — delayed so the slide leads
   const clipPath = useTransform(progress, (v) => {
+    if (reduceMotion) return "none";
     const t = Math.min(Math.max(v, 0), 1);
     const clipP = expanded
       ? t < 0.2 ? 0 : (t - 0.2) / 0.8
@@ -121,10 +137,10 @@ export function GenieEffect({
   });
 
   // Scale: small at the dock, full size when expanded
-  const scale = useTransform(progress, [0, 1], [0.3, 1]);
+  const scale = useTransform(progress, (p) => (reduceMotion ? 1 : 0.3 + 0.7 * p));
 
   // Opacity: quick fade to avoid the invisible-but-present element
-  const opacity = useTransform(progress, [0, 0.08], [0, 1]);
+  const opacity = useTransform(progress, (p) => (reduceMotion ? p : Math.min(p / 0.08, 1)));
 
   return (
     <motion.div
@@ -138,6 +154,8 @@ export function GenieEffect({
         scale,
         opacity,
         transformOrigin: "bottom center",
+        // A hidden window shouldn't swallow clicks meant for what's underneath
+        pointerEvents: expanded ? "auto" : "none",
       }}
     >
       {children}

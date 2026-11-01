@@ -1,28 +1,39 @@
 import { Terminal } from "components/ui/terminal";
-import { useLottie } from "lottie-react";
-import animationData from "~/welcome/upload.json";
 import { useState, useEffect, useRef } from "react";
 import { GenieEffect } from "components/genie-effect";
 import { Dock } from "components/dock";
-import { useIsMobile } from "~/hooks/use-is-mobile";
+
+export const BACKGROUND_URL = "/background.webp";
+// Start the intro anyway if the background is slow, so nobody stares at an empty page.
+const BACKGROUND_TIMEOUT_MS = 1500;
+
+/**
+ * Resolves once the background is decoded, so the intro plays on a quiet
+ * main thread instead of competing with image decoding.
+ */
+function waitForBackground(): Promise<void> {
+	const image = new Image();
+	image.src = BACKGROUND_URL;
+	const timeout = new Promise<void>((res) => setTimeout(res, BACKGROUND_TIMEOUT_MS));
+	return Promise.race([image.decode().catch(() => {}), timeout]);
+}
 
 export function Welcome() {
-	const options = {
-		animationData: animationData,
-		loop: true,
-		autoplay: true,
-	};
-
-	const home = useLottie(options);
-	const isMobile = useIsMobile();
 	const dockRef = useRef<HTMLDivElement>(null);
 
 	// Toggle between maximised and minimised states
 	const [isMaximized, setIsMaximized] = useState(false);
-	// Automatically play maximise animation on mount for desktop
+	// Typing waits for the window to finish opening the first time
+	const [hasOpened, setHasOpened] = useState(false);
+
 	useEffect(() => {
-		const timeout = setTimeout(() => setIsMaximized(true), 400);
-		return () => clearTimeout(timeout);
+		let cancelled = false;
+		waitForBackground().then(() => {
+			if (!cancelled) setIsMaximized(true);
+		});
+		return () => {
+			cancelled = true;
+		};
 	}, []);
 
 	const commands = [
@@ -39,11 +50,11 @@ export function Welcome() {
 	};
 
 	return (
-		<main className="relative flex flex-col items-center h-screen justify-center sm:pt-16 sm:pb-4 sm:gap-y-5 sm:justify-between overflow-hidden">
-			{/* Background image */}
+		<main className="relative flex flex-col items-center h-dvh justify-center sm:pt-16 sm:pb-4 sm:gap-y-5 sm:justify-between overflow-hidden">
+			{/* Background image — the fallback colour matches it so loading doesn't flash white */}
 			<div
-				className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat"
-				style={{ backgroundImage: "url('/background.jpg')" }}
+				className="absolute inset-0 -z-10 bg-[#c94b72] bg-cover bg-center bg-no-repeat"
+				style={{ backgroundImage: `url('${BACKGROUND_URL}')` }}
 			/>
 			<div className="absolute inset-0 -z-10 bg-black/30" />
 
@@ -52,7 +63,8 @@ export function Welcome() {
 				expanded={isMaximized}
 				duration={0.65}
 				dockRef={dockRef}
-				className="h-screen w-screen sm:h-[500px] sm:w-full sm:max-w-2xl lg:max-w-4xl"
+				onExpandComplete={() => setHasOpened(true)}
+				className="h-dvh w-screen sm:h-[500px] sm:w-full sm:max-w-2xl lg:max-w-4xl"
 			>
 				<Terminal
 					commands={commands}
@@ -61,7 +73,8 @@ export function Welcome() {
 					className="h-full w-full !max-w-none [&>div]:h-full [&>div]:max-h-none [&>div]:rounded-none sm:[&>div]:rounded-xl"
 					typingSpeed={50}
 					delayBetweenCommands={800}
-					initialDelay={500}
+					initialDelay={200}
+					autoStart={hasOpened}
 					enableSound={true}
 					onMinimize={() => setIsMaximized(false)}
 				/>
